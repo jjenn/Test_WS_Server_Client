@@ -61,12 +61,11 @@ namespace Mutex.MVC.Multiplayer
         {
             while (client.State == WebSocketState.Open)
             {
-                Console.WriteLine("Your msg:");
                 string msg = Console.ReadLine();
                 byte[] buffer = m_Encoding.GetBytes(msg);
 
                 await client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Binary, false, CancellationToken.None);
-                Console.WriteLine($"Sent!");
+                Console.WriteLine($"Sent: {msg}");
 
                 await Task.Delay(1000);
             }

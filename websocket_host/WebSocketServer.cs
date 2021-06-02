@@ -1,12 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Mutex.MVC.Multiplayer
 {
     public class WebSocketServer
     {
+        private HashSet<WebSocket> webSockets = default;
+        private UTF8Encoding m_Encoding = new UTF8Encoding();
+
         public async void Start(string listenerPrefix)
         {
             HttpListener listener = new HttpListener();
@@ -14,6 +20,22 @@ namespace Mutex.MVC.Multiplayer
             listener.Start();
             Console.WriteLine("Listening...");
 
+            await Task.WhenAll(Receive(listener), CreateMessage());
+        }
+
+        public Task CreateMessage()
+        {
+            while (true)
+            {
+                string msg = Console.ReadLine();
+                byte[] buffer = m_Encoding.GetBytes(msg);
+
+                BroadCast(buffer);
+            }
+        }
+
+        public async Task Receive(HttpListener listener)
+        {
             while (true)
             {
                 HttpListenerContext listenerContext = await listener.GetContextAsync();
@@ -29,7 +51,7 @@ namespace Mutex.MVC.Multiplayer
                 }
             }
         }
-  
+
         private async void ProcessRequest(HttpListenerContext listenerContext)
         {
             WebSocketContext webSocketContext;
@@ -48,7 +70,13 @@ namespace Mutex.MVC.Multiplayer
                 return;
             }
 
+            if (webSockets == null)
+            {
+                webSockets = new HashSet<WebSocket>();
+            }
+
             WebSocket webSocket = webSocketContext.WebSocket;
+            webSockets.Add(webSocketContext.WebSocket);
 
             try
             {
@@ -64,12 +92,14 @@ namespace Mutex.MVC.Multiplayer
                     }
                     else
                     {
-                        await webSocket.SendAsync(new ArraySegment<byte>(receiveBuffer, 0, receiveResult.Count), 
-                                                  WebSocketMessageType.Binary, 
-                                                  receiveResult.EndOfMessage, 
-                                                  CancellationToken.None);
+                        BroadCast(receiveBuffer);
                     }
                 }
+            }
+            catch (WebSocketException)
+            {
+                string ipAddress = listenerContext.Request.RemoteEndPoint.Address.ToString();
+                Console.WriteLine($"Disconnected: {ipAddress}");
             }
             catch (Exception e)
             {
@@ -80,7 +110,20 @@ namespace Mutex.MVC.Multiplayer
                 if (webSocket != null)
                 {
                     webSocket.Dispose();
-                    Console.WriteLine("Server closed!");
+                    Console.WriteLine("Client Disconnected!");
+                }
+            }
+        }
+
+        private async void BroadCast(byte[] buffer)
+        {
+            Console.WriteLine($"Broadcast: {m_Encoding.GetString(buffer)}");
+
+            foreach (WebSocket ws in webSockets)
+            {
+                if (ws.State == WebSocketState.Open)
+                {
+                     await ws.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Binary, false, CancellationToken.None);
                 }
             }
         }

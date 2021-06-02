@@ -10,7 +10,6 @@ namespace Mutex.MVC.Multiplayer
         {
             WebSocketServer server = new WebSocketServer();
             server.Start(uri);
-            Console.WriteLine("Server Started!");
             Console.ReadKey();
         }
     }
