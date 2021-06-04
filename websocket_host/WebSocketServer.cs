@@ -28,9 +28,7 @@ namespace Mutex.MVC.Multiplayer
             while (true)
             {
                 string msg = Console.ReadLine();
-                byte[] buffer = m_Encoding.GetBytes(msg);
-
-                BroadCast(buffer);
+                BroadCast(m_Encoding.GetBytes(msg));
             }
         }
 
@@ -117,7 +115,7 @@ namespace Mutex.MVC.Multiplayer
 
         private async void BroadCast(byte[] buffer)
         {
-            Console.WriteLine($"Broadcast: {m_Encoding.GetString(buffer)}");
+            Console.WriteLine($"Broadcast: {m_Encoding.GetString(buffer).TrimEnd('\0')}");
 
             foreach (WebSocket ws in webSockets)
             {

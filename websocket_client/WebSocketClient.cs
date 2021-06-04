@@ -39,10 +39,9 @@ namespace Mutex.MVC.Multiplayer
 
         public async Task Receive(ClientWebSocket client)
         {
-            byte[] buffer = new byte[1024];
-
             while (client.State == WebSocketState.Open)
             {
+                byte[] buffer = new byte[1024];
                 WebSocketReceiveResult result = await client.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
                 if (result.MessageType == WebSocketMessageType.Close)
@@ -65,8 +64,6 @@ namespace Mutex.MVC.Multiplayer
                 byte[] buffer = m_Encoding.GetBytes(msg);
 
                 await client.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Binary, false, CancellationToken.None);
-                Console.WriteLine($"Sent: {msg}");
-
                 await Task.Delay(1000);
             }
         }
